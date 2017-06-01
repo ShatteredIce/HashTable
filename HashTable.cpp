@@ -3,7 +3,11 @@
 
 #include <iostream>
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 #include <limits>
+#include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -24,6 +28,8 @@ const int INPUT_SIZE = 201;
 
 int main(){
 
+  srand(time(NULL));
+
   char input[INPUT_SIZE];
   int id = 1;
 
@@ -41,30 +47,49 @@ int main(){
       break;
     }
     else if(strcmp(input, "generate") == 0){
-      numStudents = getInt("How many students to generate? : ");
-      for(i = 0; i < numStudents; i++){
-        fstream myfile("firstnames.txt");
-        if (myfile.is_open()){
-          //if file is found, do stuff
-
+      int numStudents = getInt("How many students to generate? : ");
+      char firstname_line[81];
+      char lastname_line[81];
+      int numFirstNames = 0;
+      int numLastNames = 0;
+      int randomFirst = 0;
+      int randomLast = 0;
+      fstream firstname_file("firstnames.txt");
+      if (firstname_file.is_open()){
+        //find the number of lines in the file
+        while(firstname_file.getline(firstname_line, 80)){
+          numFirstNames++;
         }
-        //tell the user if file does not exist
-        else{
-          cout << "firstnames.txt does not exist.\n\n";
-          continue;
-        }
-
-        fstream myfile("lastnames.txt");
-        if (myfile.is_open()){
-          //if file is found, do stuff
-
-        }
-        //tell the user if file does not exist
-        else{
-          cout << "lastnames.txt does not exist.\n\n";
-          continue;
-        }
+        firstname_file.close();
       }
+      //tell the user if file does not exist
+      else{
+        cout << "firstnames.txt does not exist.\n\n";
+        continue;
+      }
+
+      fstream lastname_file("lastnames.txt");
+      if (lastname_file.is_open()){
+        //if file is found, copy contents into lastname vector
+        while(lastname_file.getline(lastname_line, 80)){
+          numLastNames++;
+        }
+        lastname_file.close();
+      }
+      //tell the user if file does not exist
+      else{
+        cout << "lastnames.txt does not exist.\n\n";
+        continue;
+      }
+      cout << numFirstNames << endl;
+      cout << numLastNames << endl;
+      for(int i = 0; i < numStudents; i++){
+        randomFirst = rand() % numFirstNames;
+        randomLast = rand() % numLastNames;
+        cout << randomFirst << endl;
+        cout << randomLast << endl;
+      }
+      cin.ignore(81, '\n');
     }
   }
 
@@ -76,7 +101,6 @@ void getInput(char* input){
   fill(input, input + sizeof(input), ' ');
   cin.getline(input, INPUT_SIZE);
   trimWhitespace(input);
-  setLowercase(input);
 }
 
 //remove extra whitespaces to make sure input is compared as intended
