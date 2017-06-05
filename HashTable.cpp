@@ -8,16 +8,9 @@
 #include <limits>
 #include <fstream>
 #include <vector>
+#include "StudentNode.h"
 
 using namespace std;
-
-//Student variables
-struct Student {
-  char nameFirst[81];
-  char nameLast[81];
-  int id;
-  float gpa;
-};
 
 //prototypes
 void getInput(char* input);
@@ -31,7 +24,9 @@ int main(){
   srand(time(NULL));
 
   char input[INPUT_SIZE];
-  int id = 1;
+  int current_id = 1;
+
+  StudentNode* hashTable[100];
 
   cout << "\n-----Hash Table v1.0-----\n";
   cout << "Creates a hash table to store a list of students\n";
@@ -128,12 +123,41 @@ int main(){
         }
         randomGPA = rand() % 5 + 1 - (double(rand() % 10))/10 - (double(rand() % 10))/100;
         cout << firstname_line << " " << lastname_line << " " << randomGPA << endl;
+        Student* s = new Student();
+        s->name_first = firstname_line;
+        s->name_last = lastname_line;
+        s->gpa = randomGPA;
+        s->id = current_id;
+        current_id++;
+        hashTable = addStudent(hashTable, s);
       }
       cin.ignore(81, '\n');
     }
   }
 
   return 0;
+}
+
+StudentNode* addStudent(StudentNode* hashTable, Student* s){
+  int index = hashFunction(s->id);
+  StudentNode* newNode = new StudentNode(s);
+  if(hashTable[index] == NULL){
+    hashTable[index] = newNode;
+  }
+  else{
+    int collisions = 1;
+    StudentNode* current = hashTable[index];
+    while(current->getNext() != NULL){
+      current = current->getNext();
+      collisions++;
+    }
+    current->setNext(newNode);
+  }
+  return hashTable;
+}
+
+int hashFunction(int id){
+  return id % sizeof(hashTable)/sizeof(hashTable[0]);
 }
 
 //stores user input into a char*
