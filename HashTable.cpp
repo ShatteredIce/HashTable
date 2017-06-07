@@ -16,9 +16,10 @@ using namespace std;
 void getInput(char* input);
 void trimWhitespace(char* text);
 int getInt(char* message);
-void addStudent(StudentNode** hashTable, Student* s);
-void printTable(StudentNode** hashTable);
+void addStudent(StudentNode** hashTable, Student* s, int tablesize);
+void printTable(StudentNode** hashTable, int tablesize);
 int hashFunction(int id, int arr_size);
+bool validId(int id, StudentNode** hashTable, int tablesize);
 
 const int INPUT_SIZE = 201;
 
@@ -29,7 +30,8 @@ int main(){
   char input[INPUT_SIZE];
   int current_id = 1;
 
-  StudentNode** hashTable = new StudentNode* [100];
+  int tablesize = 100;
+  StudentNode** hashTable = new StudentNode* [tablesize];
 
   cout << "\n-----Hash Table v1.0-----\n";
   cout << "Creates a hash table to store a list of students\n";
@@ -46,10 +48,29 @@ int main(){
       break;
     }
     else if(strcmp(input, "add") == 0){
-
+      Student* s = new Student();
+      char firstname_line[81];
+      char lastname_line[81];
+      double newGPA;
+      int newID;
+      cout << endl << "------ADDING STUDENT------" << endl;
+      cout << "First Name: ";
+      cin.getline(firstname_line, 81);
+      strcpy(s->name_first, firstname_line);
+      cout << "Last Name: ";
+      cin.getline(lastname_line, 81);
+      strcpy(s->name_last, lastname_line);
+      s->gpa = getInt("GPA: ");
+      s->id = getInt("ID: ");
+      while(!validId(s->id, hashTable, tablesize)){
+        cout << "that ID is in use. Please use another ID." << endl;
+        s->id = getInt("ID: ");
+      }
+      addStudent(hashTable, s, tablesize);
+      cout << "-----ADDED SUCCESSFULLY-----" << endl << endl;
     }
     else if(strcmp(input, "print") == 0){
-      printTable(hashTable);
+      printTable(hashTable, tablesize);
     }
     else if(strcmp(input, "delete") == 0){
 
@@ -130,19 +151,20 @@ int main(){
         strcpy(s->name_first,firstname_line);
         strcpy(s->name_last,lastname_line);
         s->gpa = randomGPA;
+        while(!validId(current_id, hashTable, tablesize)){
+          current_id++;
+        }
         s->id = current_id;
         current_id++;
-        addStudent(hashTable, s);
+        addStudent(hashTable, s, tablesize);
       }
-      cin.ignore(81, '\n');
     }
   }
 
   return 0;
 }
 
-void addStudent(StudentNode** hashTable, Student* s){
-  int tablesize = sizeof(hashTable)/sizeof(hashTable[0]);
+void addStudent(StudentNode** hashTable, Student* s, int tablesize){
   int index = hashFunction(s->id, tablesize);
   StudentNode* newNode = new StudentNode(s);
   if(hashTable[index] == NULL){
@@ -163,16 +185,34 @@ int hashFunction(int id, int arr_size){
   return id % arr_size;
 }
 
-void printTable(StudentNode** hashTable){
-  int tablesize = sizeof(hashTable)/sizeof(hashTable[0]);
+bool validId(int id, StudentNode** hashTable, int tablesize){
+  int index = hashFunction(id, tablesize);
+  if(hashTable[index] == NULL){
+    return true;
+  }
+  else{
+    StudentNode* current = hashTable[index];
+    while(current != NULL){
+      if(current->getStudent()->id == id){
+        return false;
+      }
+      current = current->getNext();
+    }
+    return true;
+  }
+}
+
+void printTable(StudentNode** hashTable, int tablesize){
+  cout << "-----PRINTING HASH TABLE-----" << endl;
   for(int i = 0; i < tablesize; i++){
     StudentNode* current = hashTable[i];
     while(current != NULL){
-      Student* s = hashTable[i]->getStudent();
-      cout << "Table Index: " << i << " Name: " << s->name_first << " " << s->name_last << " GPA: " << s->gpa << " Id: " << s->id << endl;
+      Student* s = current->getStudent();
+      cout << "[Table Index:" << i << "] Name: " << s->name_first << " " << s->name_last << " GPA: " << s->gpa << " Id: " << s->id << endl;
       current = current->getNext();
     }
   }
+  cout << "-----------------------------" << endl;
 }
 
 //stores user input into a char*
@@ -221,5 +261,6 @@ int getInt(char* message){
       valid = true;
     }
   }
+  cin.ignore(81, '\n');
   return number;
 }
