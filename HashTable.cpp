@@ -16,10 +16,13 @@ using namespace std;
 void getInput(char* input);
 void trimWhitespace(char* text);
 int getInt(char* message);
-void addStudent(StudentNode** hashTable, Student* s, int tablesize);
+int addStudent(StudentNode** hashTable, Student* s, int tablesize);
 void printTable(StudentNode** hashTable, int tablesize);
 int hashFunction(int id, int arr_size);
 bool validId(int id, StudentNode** hashTable, int tablesize);
+void searchTable(int id, StudentNode** hashTable, int tablesize);
+bool deleteStudent(int id, StudentNode** hashTable, int tablesize);
+bool resizeTable(StudentNode** & hashTable, int tablesize);
 
 const int INPUT_SIZE = 201;
 
@@ -32,10 +35,15 @@ int main(){
 
   int tablesize = 100;
   StudentNode** hashTable = new StudentNode* [tablesize];
+  int totalStudents = 0;
+
+  for(int i = 0; i < tablesize; i++){
+    hashTable[i] = NULL;
+  }
 
   cout << "\n-----Hash Table v1.0-----\n";
   cout << "Creates a hash table to store a list of students\n";
-  cout << "Availible commands are: 'add', 'print', 'delete', 'generate', and 'quit'.\n";
+  cout << "Availible commands are: 'add', 'print', 'search', 'delete', 'generate', and 'quit'.\n";
   cout << "You may enter custom names into firstname.txt and lastname.txt (one per line)\n";
   cout << "C++ Project 14 - Nathan Purwosumarto\n\n";
 
@@ -63,20 +71,41 @@ int main(){
       s->gpa = getInt("GPA: ");
       s->id = getInt("ID: ");
       while(!validId(s->id, hashTable, tablesize)){
-        cout << "that ID is in use. Please use another ID." << endl;
+        cout << "That ID is in use. Please use another ID." << endl;
         s->id = getInt("ID: ");
       }
-      addStudent(hashTable, s, tablesize);
+      totalStudents++;
+      if((addStudent(hashTable, s, tablesize) > 3) || totalStudents > tablesize / 2){
+        resizeTable(hashTable, tablesize);
+        tablesize *= 2;
+        cout << "<Table has been resized to " << tablesize << " slots>" << endl;
+      }
       cout << "-----ADDED SUCCESSFULLY-----" << endl << endl;
     }
     else if(strcmp(input, "print") == 0){
+      cout << "\n-----PRINTING HASH TABLE-----" << endl;
       printTable(hashTable, tablesize);
+      cout << "-----------------------------" << endl;
+    }
+    else if(strcmp(input, "search") == 0){
+      cout << "\n-----SEARCHING HASH TABLE-----" << endl;
+      int existingId = getInt("Search for existing ID: ");
+      searchTable(existingId, hashTable, tablesize);
+      cout << "-----------------------------\n" << endl;
     }
     else if(strcmp(input, "delete") == 0){
-
+      cout << "\n-----DELETING STUDENT-----" << endl;
+      int deleteId = getInt("Delete student with ID: ");
+      if(deleteStudent(deleteId, hashTable, tablesize)){
+        totalStudents--;
+      }
+      cout << "-----------------------------\n" << endl;
     }
     else if(strcmp(input, "generate") == 0){
+      cout << "\n-----GENERATING STUDENTS-----" << endl;
       int numStudents = getInt("How many students to generate? : ");
+      totalStudents += numStudents;
+      cout << endl;
       char firstname_line[81];
       char lastname_line[81];
       int numFirstNames = 0;
@@ -111,14 +140,14 @@ int main(){
         cout << "lastnames.txt does not exist.\n\n";
         continue;
       }
-      cout << numFirstNames << endl;
-      cout << numLastNames << endl;
+      //cout << numFirstNames << endl;
+      //cout << numLastNames << endl;
       //get the random name
       for(int i = 0; i < numStudents; i++){
         randomFirst = rand() % numFirstNames + 1;
         randomLast = rand() % numLastNames + 1;
-        cout << randomFirst << endl;
-        cout << randomLast << endl;
+        //cout << randomFirst << endl;
+        //cout << randomLast << endl;
         //get the random first name
         fstream firstname_file("firstnames.txt");
         if (firstname_file.is_open()){
@@ -146,7 +175,6 @@ int main(){
           continue;
         }
         randomGPA = rand() % 5 + 1 - (double(rand() % 10))/10 - (double(rand() % 10))/100;
-        cout << firstname_line << " " << lastname_line << " " << randomGPA << endl;
         Student* s = new Student();
         strcpy(s->name_first,firstname_line);
         strcpy(s->name_last,lastname_line);
@@ -155,29 +183,37 @@ int main(){
           current_id++;
         }
         s->id = current_id;
+        cout << "Generated Student: " << firstname_line << " " << lastname_line << " GPA: " << randomGPA <<  " ID: " << current_id << endl;
         current_id++;
-        addStudent(hashTable, s, tablesize);
+        if((addStudent(hashTable, s, tablesize) > 3) || totalStudents > tablesize / 2){
+          resizeTable(hashTable, tablesize);
+          tablesize *= 2;
+          cout << "<Table has been resized to " << tablesize << " slots>" << endl;
+        }
       }
+      cout << "\n-----------------------------\n" << endl;
     }
   }
 
   return 0;
 }
 
-void addStudent(StudentNode** hashTable, Student* s, int tablesize){
+int addStudent(StudentNode** hashTable, Student* s, int tablesize){
   int index = hashFunction(s->id, tablesize);
   StudentNode* newNode = new StudentNode(s);
   if(hashTable[index] == NULL){
     hashTable[index] = newNode;
+    return 1;
   }
   else{
-    int collisions = 1;
+    int collisions = 2;
     StudentNode* current = hashTable[index];
     while(current->getNext() != NULL){
       current = current->getNext();
       collisions++;
     }
     current->setNext(newNode);
+    return collisions;
   }
 }
 
@@ -203,7 +239,6 @@ bool validId(int id, StudentNode** hashTable, int tablesize){
 }
 
 void printTable(StudentNode** hashTable, int tablesize){
-  cout << "-----PRINTING HASH TABLE-----" << endl;
   for(int i = 0; i < tablesize; i++){
     StudentNode* current = hashTable[i];
     while(current != NULL){
@@ -212,7 +247,82 @@ void printTable(StudentNode** hashTable, int tablesize){
       current = current->getNext();
     }
   }
-  cout << "-----------------------------" << endl;
+}
+
+void searchTable(int id, StudentNode** hashTable, int tablesize){
+  //if the id is not valid for a new student, then student is in the list
+  if(!validId(id, hashTable, tablesize)){
+    int index = hashFunction(id, tablesize);
+    StudentNode* current = hashTable[index];
+    while(current != NULL){
+      Student* s = current->getStudent();
+      if(s->id == id){
+        cout << "<Student Found>" << endl;
+        cout << "[Table Index:" << index << "] Name: " << s->name_first << " " << s->name_last << " GPA: " << s->gpa << " Id: " << s->id << endl;
+        break;
+      }
+      current = current->getNext();
+    }
+  }
+  else{
+    cout << "No Student Found." << endl;
+  }
+}
+
+bool deleteStudent(int id, StudentNode** hashTable, int tablesize){
+  //if the id is not valid for a new student, then student is in the list
+  if(!validId(id, hashTable, tablesize)){
+    int index = hashFunction(id, tablesize);
+    StudentNode* current = hashTable[index];
+    Student* s = current->getStudent();
+    //student is in the first position in the hashtable
+    if(s->id == id){
+      cout << "Deleted Student: " << s->name_first << " " << s->name_last << endl;
+      StudentNode* next = current->getNext();
+      delete current;
+      hashTable[index] = next;
+    }
+    //student is not the first position in the hashtable
+    else{
+      while(current->getNext() != NULL){
+        s = current->getNext()->getStudent();
+        if(s->id == id){
+          cout << "Deleted Student: " << s->name_first << " " << s->name_last << endl;
+          StudentNode* next = current->getNext()->getNext();
+          delete current->getNext();
+          current->setNext(next);
+          break;
+        }
+        current = current->getNext();
+      }
+    }
+    return true;
+  }
+  else{
+    cout << "No Student Found." << endl;
+    return false;
+  }
+}
+
+bool resizeTable(StudentNode** & hashTable, int tablesize){
+  bool resizeAgain = false;
+  StudentNode** newTable = new StudentNode* [tablesize*2];
+  for(int i = 0; i < tablesize*2; i++){
+    newTable[i] = NULL;
+  }
+  for(int i = 0; i < tablesize; i++){
+    StudentNode* current = hashTable[i];
+    while(current != NULL){
+      Student* s = current->getStudent();
+      if(addStudent(newTable, s, tablesize*2)){
+        resizeAgain = true;
+      }
+      current = current->getNext();
+    }
+  }
+  delete[] hashTable;
+  hashTable = newTable;
+  return resizeAgain;
 }
 
 //stores user input into a char*
