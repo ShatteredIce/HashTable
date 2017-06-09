@@ -6,6 +6,7 @@
 
 using namespace std;
 
+//student data values 
 struct Student{
   char name_first[81];
   char name_last[81];
@@ -15,11 +16,11 @@ struct Student{
 
 class StudentNode {
 public:
-  StudentNode(Student*);
-  ~StudentNode();
-  StudentNode* getNext();
-  void setNext(StudentNode*);
-  Student* getStudent();
+  StudentNode(Student*); //Constructor: stores a Student*, sets next to NULL
+  ~StudentNode(); //Deconstructor: deletes Student*, sets next to NULL
+  StudentNode* getNext(); //returns the pointer to the next node
+  void setNext(StudentNode*); //sets the pointer to the next node
+  Student* getStudent(); //returns the student struct
  protected:
   Student* student;
   StudentNode* next;
